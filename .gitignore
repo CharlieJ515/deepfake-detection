@@ -1,3 +1,15 @@
+# ignore data / compressed data (tarball)
+data/
+*.tar
+*.tar.gz
+*.tgz
+*.tar.bz2
+*.tar.xz
+
+# ignore test scripts
+test.py
+test.ipynb
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -143,6 +155,9 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+Scripts
+Include/
+share/
 
 # Spyder project settings
 .spyderproject
