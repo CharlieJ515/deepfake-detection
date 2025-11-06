@@ -8,7 +8,9 @@ def split_tarball(input_tar: Path, output_pattern:str, count: int):
     print(tar_path)
     with wds.writer.ShardWriter(output_pattern, maxcount=count) as sink:
         for sample in wds.compat.WebDataset(tar_path):
-            sink.write(sample)
+            keys = sample.keys()
+            if any(k.endswith(("jpg", "jpeg", "png")) for k in keys):
+                sink.write(sample)
 
 def find_tarballs(root_dir: Path) -> list[str]:
     root = Path(root_dir).expanduser().absolute()
