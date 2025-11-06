@@ -1,3 +1,6 @@
+# ignore vscode
+.vscode/
+
 # ignore data / compressed data (tarball)
 data/
 *.tar
