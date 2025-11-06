@@ -1,0 +1,7 @@
+ipykernel==7.1.0
+mlflow==3.5.1
+pillow==11.3.0
+tensorboard==2.20.0
+torch==2.9.0+cu126
+torchvision==0.24.0+cu126
+webdataset==1.0.2
