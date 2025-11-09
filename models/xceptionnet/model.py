@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.optim as optim
 import timm
 from .config import ModelConfig
+from torchvision.transforms import v2, InterpolationMode
 
 class Model(nn.Module):
 
@@ -50,3 +51,40 @@ class Model(nn.Module):
         """평가 시 사용 (현재 engine.py에서는 미사용)"""
         probs = torch.sigmoid(self.forward(x))
         return (probs >= threshold).long()
+    
+    @staticmethod
+    def get_transforms(config: ModelConfig, is_train: bool = True) -> v2.Compose:
+        """
+        XceptionNet을 위한 커스텀 Augmentation 파이프라인
+        (RandomResizedCrop + JPEG)
+        """
+        transforms_list = []
+
+        if is_train:
+            transforms_list.extend([
+                v2.RandomResizedCrop(
+                    (config.IMG_SIZE, config.IMG_SIZE), # 299x299
+                    scale=(0.85, 1.0),
+                    ratio=(0.9, 1.1),
+                    interpolation=InterpolationMode.BICUBIC
+                ),
+                v2.RandomApply([
+                    v2.JPEG(quality=(40, 90))
+                ], p=0.5),
+                v2.RandomHorizontalFlip(p=0.5),
+            ])
+        else:
+            transforms_list.append(
+                 v2.Resize(
+                    (config.IMG_SIZE, config.IMG_SIZE), 
+                    interpolation=InterpolationMode.BICUBIC
+                )
+            )
+
+        transforms_list.extend([
+            v2.ToImage(),
+            v2.ToDtype(torch.float32, scale=True),
+            v2.Normalize(mean=config.MEAN, std=config.STD),
+        ])
+        
+        return v2.Compose(transforms_list)
