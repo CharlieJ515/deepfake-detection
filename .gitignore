@@ -1,3 +1,6 @@
+# ignore tensorboard
+runs/
+
 # ignore vscode
 .vscode/
 
