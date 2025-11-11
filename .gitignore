@@ -10,8 +10,8 @@ data/
 *.tar.xz
 
 # ignore test scripts
-test.py
-test.ipynb
+test*.py
+test*.ipynb
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
