@@ -18,3 +18,7 @@ dataset - https://drive.google.com/drive/folders/1TxsSzPhZsJNijIXPINv05IUWhG3vBU
 # CelebAMask-HQ (unused)
 
 dataset - https://drive.google.com/file/d/1badu11NqxGf6qM3PTTooQDJvQbejgbTv/view
+
+# GenImage
+
+dataset - https://drive.google.com/drive/folders/1jGt10bwTbhEZuGXLyvrCuxOI0cBqQ1FS 

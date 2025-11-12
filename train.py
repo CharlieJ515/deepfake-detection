@@ -1,93 +1,138 @@
 from pathlib import Path
-import time
+from itertools import islice
 
 import torch
-import torch.nn as nn
-import torch.optim as optim
 from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
 from torchvision.transforms import v2
 
+from tqdm import tqdm
+from dotenv import load_dotenv
+
 from models.cnn_discriminator import Discriminator
-from datasets.diffface import DiffusionFaceDataset
+from datasets.wds import PairedDataset
+from datasets.diff_face import get_diffface_shards
+from datasets.gen_image import get_genimage_shards
+from datasets.utils.brace_expand import expand_brace_patterns
+from analysis.f1_score import compute_macro_f1
+
+load_dotenv()
+
+seed = 42
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+chkpt_path = Path("./checkpoints/attempt2")
+
+### Train ###
+lr = 2e-4
+
+genimage_datasets = ["adm", "biggan", "glide", "vqdm", "wukong"]
+data_shuffle_size = 10000
+shard_shuffle_size = 20
+train_fraction = None
+train_count = None
+ai_shards, real_shards, _, _ = get_genimage_shards(genimage_datasets)
+ai_shards = expand_brace_patterns(
+    ai_shards,
+    fraction=train_fraction,
+    count=train_count,
+)
+real_shards = expand_brace_patterns(
+    real_shards,
+    fraction=train_fraction,
+    count=train_count,
+)
 
 
-def train():
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+batch_size = 128
+num_workers = 2
 
-    model = Discriminator(img_size=256)
-    model = model.to(device)
-
-    diffface_shards = [
-        "./data/diffusion_face/ADM-{000..005}.tar",
-        "./data/diffusion_face/DDIM-{000..005}.tar",
-        "./data/diffusion_face/DDPM-{000..005}.tar",
-        "./data/diffusion_face/DiffSwap-{000..005}.tar",
-        "./data/diffusion_face/Inpaint-{000..005}.tar",
-        "./data/diffusion_face/LDM-{000..005}.tar",
-        "./data/diffusion_face/PNDM-{000..005}.tar",
-        "./data/diffusion_face/SDv15_DS0.3-{000..005}.tar",
-        "./data/diffusion_face/SDv15_DS0.5-{000..005}.tar",
-        "./data/diffusion_face/SDv15_DS0.7-{000..005}.tar",
-        "./data/diffusion_face/SDv21_DS0.3-{000..005}.tar",
-        "./data/diffusion_face/SDv21_DS0.5-{000..005}.tar",
-        "./data/diffusion_face/SDv21_DS0.7-{000..005}.tar",
-    ]
-    celeba_shards = [
-        "./data/mm_celeba_hq/mm_celeba_hq-{000..005}.tar"
-    ]
-    transform = v2.Compose([
-        v2.Resize((256, 256)),
+img_size = 256
+transform = v2.Compose(
+    [
+        v2.RandomCrop(img_size, pad_if_needed=True, padding_mode="reflect"),
         v2.ToImage(),
         v2.ToDtype(torch.float32, scale=True),
-        v2.Normalize(mean=[0.5, 0.5, 0.5],
-                    std=[0.5, 0.5, 0.5]),
-    ])
-    dataset = DiffusionFaceDataset(
-        diffface_shards,
-        celeba_shards,
-        3000,
-        256,
-        transform,
+        v2.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+    ]
+)
+
+num_epoch = 10
+num_step: int = 10_000
+log_interval = 10
+
+### Eval ###
+eval_fraction = None
+eval_count = 1
+
+
+def train(writer: SummaryWriter):
+    model = Discriminator(img_size=img_size, lr=lr).to(device)
+
+    dataset = PairedDataset(
+        ai_shards=ai_shards,
+        real_shards=real_shards,
+        split="train",
+        batch_size=batch_size,
+        data_shuffle_size=data_shuffle_size,
+        shard_shuffle_size=shard_shuffle_size,
+        transform=transform,
+        seed=seed,
     )
-    dataloader = DataLoader(dataset, None, )
+    dataloader = DataLoader(
+        dataset, batch_size=None, pin_memory=True, num_workers=num_workers
+    )
 
     model.train()
-    step = 0
-    num_epoch = 10
-    log_interval = 100
-    start_time = time.time()
-    for epoch in range(1, num_epoch+1):
-        running_loss = 0.0
-        correct = 0
-        total = 0
 
-        images: torch.Tensor
-        labels: torch.Tensor
-        for images, labels in dataloader:
-            images = images.to(device, non_blocking=True)
-            labels = labels.unsqueeze(1).to(device, dtype=torch.float32, non_blocking=True)
+    epoch_bar = tqdm(total=num_epoch, desc="Training progress", position=0, ncols=100)
+    for epoch in range(1, num_epoch + 1):
+        train_epoch(epoch, dataloader, model, writer)
+        model.save(chkpt_path / f"epoch-{epoch:03d}.pt")
+        epoch_bar.update(1)
 
-            logits, loss = model.step(images, labels)
+    epoch_bar.close()
 
-            preds = (torch.sigmoid(logits.view(-1)) > 0.5).long()
-            correct += (preds == labels).sum().item()
 
-            running_loss += loss * images.size(0)
-            total += images.size(0)
-            step += 1
+def train_epoch(
+    epoch: int, dataloader: DataLoader, model: Discriminator, writer: SummaryWriter
+):
+    step_bar = tqdm(
+        total=num_step,
+        desc=f"Epoch {epoch}/{num_epoch}",
+        position=1,
+        leave=False,
+        ncols=100,
+    )
 
-            if step % log_interval == 0:
-                avg_loss = running_loss / total
-                acc = correct / total
-                elapsed = time.time() - start_time
-                print(f"[epoch {epoch}/{num_epoch} | step {step}] "
-                      f"loss={avg_loss:.4f} acc={acc:.4f} elapsed={elapsed:.1f}s")
+    for step, (images, labels) in enumerate(islice(dataloader, num_step), 1):
+        images = images.to(device, non_blocking=True)
+        labels = labels.unsqueeze(1).to(device, dtype=torch.float32, non_blocking=True)
 
-        # end of epoch
-        avg_loss = running_loss / total
-        acc = correct / total
-        print(f"Epoch {epoch} done: loss={avg_loss:.4f} acc={acc:.4f}")
+        logits, loss = model.step(images, labels)
+
+        if step % log_interval != 0:
+            step_bar.update(1)
+            continue
+
+        with torch.no_grad():
+            probs = torch.sigmoid(logits.view(-1))
+            preds = (probs > 0.5).long()
+            acc = (preds == labels.view(-1).long()).float().mean().item()
+            macro_f1 = compute_macro_f1(preds, labels)
+
+        global_step = (epoch - 1) * num_step + step
+        writer.add_scalar("train/loss", loss, global_step)
+        writer.add_scalar("train/acc", acc, global_step)
+        writer.add_scalar("train/macro_f1", macro_f1, global_step)
+
+        step_bar.write(
+            f"[epoch {epoch:03d} | step {step:06d}] loss={loss:.4f}  acc={acc:.4f}  macro_f1={macro_f1:.4f}"
+        )
+        step_bar.update(1)
+    step_bar.close()
 
 
 if __name__ == "__main__":
-    train()
+    writer = SummaryWriter()
+    train(writer)
+    writer.close()
