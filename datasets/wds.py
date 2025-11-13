@@ -70,7 +70,7 @@ class PairedDataset(IterableDataset):
     def __init__(
         self,
         *,
-        ai_shards: list[str],
+        fake_shards: list[str],
         real_shards: list[str],
         split: Literal["train", "eval"] = "train",
         batch_size: int = 128,
@@ -86,8 +86,8 @@ class PairedDataset(IterableDataset):
         self.concat_fn = concat_fn or self.default_concat
 
         half = batch_size // 2
-        self.ai_dataset = build_wds(
-            ai_shards,
+        self.fake_dataset = build_wds(
+            fake_shards,
             label=True,
             split=split,
             batch_size=half,
@@ -114,8 +114,8 @@ class PairedDataset(IterableDataset):
         return images, labels
 
     def __iter__(self):
-        ai_iter = iter(self.ai_dataset)
+        fake_iter = iter(self.fake_dataset)
         real_iter = iter(self.real_dataset)
 
-        for ai_batch, real_batch in zip(ai_iter, real_iter):
-            yield self.concat_fn(ai_batch, real_batch)
+        for fake_batch, real_batch in zip(fake_iter, real_iter):
+            yield self.concat_fn(fake_batch, real_batch)
