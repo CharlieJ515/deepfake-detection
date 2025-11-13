@@ -10,12 +10,12 @@ from torchvision.transforms import v2
 from tqdm import tqdm
 from dotenv import load_dotenv
 
-from models.cnn_discriminator import Discriminator
+from models.cnn import Discriminator
 from datasets.wds import PairedDataset
 from datasets.diff_face import get_diffface_shards
 from datasets.gen_image import get_genimage_shards
 from datasets.utils.brace_expand import expand_brace_patterns
-from analysis.f1_score import compute_macro_f1
+from analysis.score import BinaryClassificationMeter
 
 load_dotenv()
 
@@ -74,6 +74,7 @@ def evaluate(checkpoint: Path):
     )
 
     # Tracking
+    meter = BinaryClassificationMeter()
     TP = TN = FP = FN = 0
     total_loss = 0.0
     total_n = 0
@@ -86,24 +87,15 @@ def evaluate(checkpoint: Path):
         loss = torch.nn.functional.binary_cross_entropy_with_logits(logits, labels)
         probs = torch.sigmoid(logits.view(-1))
         preds = (probs > 0.5).long()
-        y_true = labels.view(-1).long()
 
-        TP += int(((preds == 1) & (y_true == 1)).sum())
-        TN += int(((preds == 0) & (y_true == 0)).sum())
-        FP += int(((preds == 1) & (y_true == 0)).sum())
-        FN += int(((preds == 0) & (y_true == 1)).sum())
+        meter.update(preds, labels)
 
-        bs = y_true.numel()
+        bs = labels.numel()
         total_loss += float(loss.item()) * bs
         total_n += bs
 
-    denom_pos = 2 * TP + FP + FN
-    denom_neg = 2 * TN + FP + FN
-    F1_pos = (2 * TP / denom_pos) if denom_pos > 0 else 0.0
-    F1_neg = (2 * TN / denom_neg) if denom_neg > 0 else 0.0
-    macro_f1 = (F1_pos + F1_neg) / 2.0
-
-    acc = (TP + TN) / max(1, (TP + TN + FP + FN))
+    macro_f1 = meter.f1_score
+    acc = meter.accuracy
     avg_loss = total_loss / max(1, total_n)
 
     print(
