@@ -34,7 +34,7 @@ def build_wds(
     transform: Optional[v2.Compose] = None,
     seed: Optional[int] = 42,
 ) -> wds.compat.WebDataset:
-    files = expand_brace_patterns(shards, fraction=1)
+    files = expand_brace_patterns(shards)
     transform = transform or v2.Compose(
         [v2.ToImage(), v2.ToDtype(torch.float32, scale=True)]
     )
