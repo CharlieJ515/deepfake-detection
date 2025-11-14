@@ -11,7 +11,7 @@ _DATASET_RANGES: dict[str, tuple[int, int, int, int]] = {
 }
 
 
-def get_genimage_shards(datasets: Iterable[str], base_url: str | None = None):
+def get_genimage_train(datasets: Iterable[str], base_url: str | None = None):
     base_url = base_url or get_base_url()
 
     fake_shards: list[str] = []
