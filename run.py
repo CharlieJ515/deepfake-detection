@@ -11,7 +11,15 @@ from tqdm import tqdm
 from dotenv import load_dotenv
 
 from models import BaseDiscriminator, DinoDiscriminator
-from datasets import PairedDataset, get_diffface_shards, get_genimage_shards
+from datasets import (
+    PairedDataset,
+    get_face3000_train,
+    get_face3000_eval,
+    get_ffhq_train,
+    get_ffhq_eval,
+    get_sfhq_train,
+    get_sfhq_eval,
+)
 from datasets.utils import expand_brace_patterns
 from analysis.score import BinaryClassificationMeter
 
@@ -196,39 +204,24 @@ def evaluate(
 
 
 if __name__ == "__main__":
-    # genimage shards (train)
-    genimage_datasets = ["adm", "biggan", "glide", "vqdm", "wukong", "sdv5"]
-    train_fraction = None
-    train_count = None
-    train_fake_shards, train_real_shards, _, _ = get_genimage_shards(genimage_datasets)
-    train_fake_shards = expand_brace_patterns(
-        train_fake_shards,
-        fraction=train_fraction,
-        count=train_count,
-    )
-    train_real_shards = expand_brace_patterns(
-        train_real_shards,
-        fraction=train_fraction,
-        count=train_count,
-    )
+    # train dataset
+    train_fake_shards = get_sfhq_train("./data")
+    train_real_shards = get_ffhq_train("./data")
 
-    # diffusion face shards (eval)
-    _, eval_real_shards1, eval_fake_shards, eval_real_shards2 = get_diffface_shards()
-    eval_fake_shards = expand_brace_patterns(eval_fake_shards)
-    eval_fake_shards = eval_fake_shards[:6]
-    eval_real_shards = eval_real_shards1 + eval_real_shards2
-    eval_real_shards = expand_brace_patterns(eval_real_shards)
+    # eval dataset
+    eval_fake_shards = get_sfhq_eval("./data")
+    eval_real_shards = get_ffhq_eval("./data")
 
     # model and transform
     img_size = 518
     model = DinoDiscriminator(freeze_backbone=True)
     transform = v2.Compose(
         [
-            v2.Resize(img_size),
+            v2.Resize(img_size, v2.InterpolationMode.BICUBIC),
             v2.CenterCrop(img_size),
             v2.ToImage(),
             v2.ToDtype(torch.float32, scale=True),
-            v2.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+            v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
         ]
     )
 
@@ -237,7 +230,7 @@ if __name__ == "__main__":
         fake_shards=train_fake_shards,
         real_shards=train_real_shards,
         transform=transform,
-        num_workers=2,
+        num_workers=3,
         batch_size=128,
         shard_shuffle_size=20,
         data_shuffle_size=30_000,
@@ -245,11 +238,11 @@ if __name__ == "__main__":
     )
     train_config = TrainConfig(
         num_epoch=100,
-        num_step=500,
+        num_step=100,
         log_interval=10,
         threshold=0.5,
         device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
-        checkpoint_path=Path("./checkpoints/cnn_genimage_pretrain"),
+        checkpoint_path=Path("./checkpoints/dino/attempt1"),
     )
     eval_data_config = DataConfig(
         fake_shards=eval_fake_shards,
