@@ -8,7 +8,7 @@ import timm
 from .base import BaseDiscriminator
 
 
-class DinoV2Discriminator(BaseDiscriminator):
+class DinoDiscriminator(BaseDiscriminator):
     def __init__(
         self,
         backbone_name: str = "vit_small_patch14_dinov2.lvd142m",
