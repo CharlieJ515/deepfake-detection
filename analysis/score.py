@@ -1,4 +1,5 @@
 import torch
+from torch.utils.tensorboard import SummaryWriter
 
 
 class BinaryClassificationMeter:
@@ -33,7 +34,8 @@ class BinaryClassificationMeter:
         tp, tn, fp, fn = self.tp, self.tn, self.fp, self.fn
         f1_pos = (2 * tp) / (2 * tp + fp + fn + 1e-8)
         f1_neg = (2 * tn) / (2 * tn + fp + fn + 1e-8)
-        return (f1_pos + f1_neg) / 2
+        f1_score = (f1_pos + f1_neg) / 2
+        return f1_score, f1_pos, f1_neg
 
     @property
     def accuracy(self):
@@ -45,3 +47,18 @@ class BinaryClassificationMeter:
         tpr = tp / (tp + fn + 1e-8)
         tnr = tn / (tn + fp + 1e-8)
         return (tpr + tnr) / 2
+
+    def log(self, writer: SummaryWriter, tag: str, step: int):
+        f1_score, f1_pos, f1_neg = self.f1_score
+        accuracy = self.accuracy
+
+        writer.add_scalars(
+            main_tag=tag,
+            tag_scalar_dict={
+                "f1_pos": f1_pos,
+                "f1_neg": f1_neg,
+                "f1_score": f1_score,
+                "accuracy": accuracy,
+            },
+            global_step=step,
+        )
