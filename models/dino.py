@@ -8,6 +8,7 @@ import timm
 from .base import BaseDiscriminator
 
 
+# https://huggingface.co/timm/vit_small_patch14_dinov2.lvd142m/blame/4476dc0c66daca2ef4a40d2625b4a7063f02b685/config.json
 class DinoDiscriminator(BaseDiscriminator):
     def __init__(
         self,
