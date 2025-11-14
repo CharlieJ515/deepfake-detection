@@ -5,6 +5,7 @@ _DATASET_RANGES: dict[str, tuple[int, int, int, int]] = {
     "adm": (80, 78, 2, 2),
     "biggan": (80, 80, 2, 2),
     "glide": (80, 80, 2, 2),
+    "sdv5": (82, 74, 3, 3),
     "vqdm": (80, 80, 2, 2),
     "wukong": (80, 80, 2, 2),
 }
