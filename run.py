@@ -10,7 +10,7 @@ from torchvision.transforms import v2
 from tqdm import tqdm
 from dotenv import load_dotenv
 
-from models import BaseDiscriminator, CNNDiscriminator
+from models import BaseDiscriminator, DinoDiscriminator
 from datasets import PairedDataset, get_diffface_shards, get_genimage_shards
 from datasets.utils import expand_brace_patterns
 from analysis.score import BinaryClassificationMeter
@@ -124,7 +124,7 @@ def train_epoch(
 
         f1_score, f1_pos, f1_neg = meter.f1_score
         acc = meter.accuracy
-        step_bar.write(
+        tqdm.write(
             f"Train [epoch {epoch:03d} | step {step:06d}] loss={loss:.4f} acc={acc:.4f} "
             f"f1_score={f1_score:.4f} f1_pos={f1_pos:.4f} f1_neg={f1_neg:.4f}"
         )
@@ -189,7 +189,7 @@ def evaluate(
     acc = meter.accuracy
     avg_loss = total_loss / total_n
 
-    print(
+    tqdm.write(
         f"Eval [step {epoch:06d}] loss={avg_loss:.4f} acc={acc:.4f} "
         f"f1_score={f1_score:.4f} f1_pos={f1_pos:.4f} f1_neg={f1_neg:.4f}"
     )
@@ -220,8 +220,8 @@ if __name__ == "__main__":
     eval_real_shards = expand_brace_patterns(eval_real_shards)
 
     # model and transform
-    img_size = 256
-    model = CNNDiscriminator(img_size=img_size)
+    img_size = 518
+    model = DinoDiscriminator(freeze_backbone=True)
     transform = v2.Compose(
         [
             v2.Resize(img_size),
@@ -260,6 +260,6 @@ if __name__ == "__main__":
         seed=42,
     )
 
-    writer = SummaryWriter("cnn_genimage_pretrain")
+    writer = SummaryWriter()
     train(writer, model, train_config, train_data_config, eval_data_config)
     writer.close()
