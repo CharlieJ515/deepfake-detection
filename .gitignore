@@ -1,3 +1,6 @@
+# ignore aif
+aif.zip
+
 # ignore checkpoints
 checkpoints
 
