@@ -11,14 +11,11 @@ _DATASET_RANGES: dict[str, tuple[int, int, int, int]] = {
 }
 
 
-def get_genimage_shards(datasets: Iterable[str]):
-    base_url = get_base_url()
+def get_genimage_shards(datasets: Iterable[str], base_url: str | None = None):
+    base_url = base_url or get_base_url()
 
-    train_ai: list[str] = []
-    train_real: list[str] = []
-    val_ai: list[str] = []
-    val_real: list[str] = []
-
+    fake_shards: list[str] = []
+    real_shards: list[str] = []
     for ds in datasets:
         ds = ds.lower()
         if ds not in _DATASET_RANGES:
@@ -26,23 +23,41 @@ def get_genimage_shards(datasets: Iterable[str]):
                 f"Unknown dataset '{ds}'. Valid: {sorted(_DATASET_RANGES)}"
             )
 
-        tr_ai_end, tr_real_end, v_ai_end, v_real_end = _DATASET_RANGES[ds]
-        prefix = f"{base_url}/data/gen_image/imagenet_{ds}"
+        fake_end, reak_end, _, _ = _DATASET_RANGES[ds]
+        prefix = f"{base_url}/gen_image/imagenet_{ds}"
 
-        ai_train_shard = (
-            f"{prefix}/train/ai_shards/shard-{{000000..{tr_ai_end:06d}}}.tar.gz"
-        )
-        real_train_shard = (
-            f"{prefix}/train/nature_shards/shard-{{000000..{tr_real_end:06d}}}.tar.gz"
-        )
-        ai_val_shard = f"{prefix}/val/ai_shards/shard-{{000000..{v_ai_end:06d}}}.tar.gz"
-        real_val_shard = (
-            f"{prefix}/val/nature_shards/shard-{{000000..{v_real_end:06d}}}.tar.gz"
+        fake_shard = f"{prefix}/train/ai_shards/shard-{{000000..{fake_end:06d}}}.tar.gz"
+        real_shard = (
+            f"{prefix}/train/nature_shards/shard-{{000000..{reak_end:06d}}}.tar.gz"
         )
 
-        train_ai.append(ai_train_shard)
-        train_real.append(real_train_shard)
-        val_ai.append(ai_val_shard)
-        val_real.append(real_val_shard)
+        fake_shards.append(fake_shard)
+        real_shards.append(real_shard)
 
-    return train_ai, train_real, val_ai, val_real
+    return fake_shards, real_shards
+
+
+def get_genimage_eval(datasets: Iterable[str], base_url: str | None = None):
+    base_url = base_url or get_base_url()
+
+    fake_shards: list[str] = []
+    real_shards: list[str] = []
+    for ds in datasets:
+        ds = ds.lower()
+        if ds not in _DATASET_RANGES:
+            raise ValueError(
+                f"Unknown dataset '{ds}'. Valid: {sorted(_DATASET_RANGES)}"
+            )
+
+        _, _, fake_end, real_end = _DATASET_RANGES[ds]
+        prefix = f"{base_url}/gen_image/imagenet_{ds}"
+
+        fake_shard = f"{prefix}/val/ai_shards/shard-{{000000..{fake_end:06d}}}.tar.gz"
+        real_shard = (
+            f"{prefix}/val/nature_shards/shard-{{000000..{real_end:06d}}}.tar.gz"
+        )
+
+        fake_shards.append(fake_shard)
+        real_shards.append(real_shard)
+
+    return fake_shards, real_shards
