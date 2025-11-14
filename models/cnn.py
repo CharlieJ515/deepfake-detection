@@ -6,7 +6,7 @@ import torch.optim as optim
 from .base import BaseDiscriminator
 
 
-class Discriminator(BaseDiscriminator):
+class CNNDiscriminator(BaseDiscriminator):
     def __init__(self, in_channels: int = 3, img_size: int = 224, lr: float = 2e-4):
         super().__init__()
         self.features = nn.Sequential(
