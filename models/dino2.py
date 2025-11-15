@@ -15,6 +15,7 @@ class DinoDiscriminator2(BaseDiscriminator):
         backbone_name: str = "vit_small_patch14_dinov2.lvd142m",
         lr: float = 2e-4,
         freeze_backbone: bool = True,
+        pretrained: bool = True,
     ):
         super().__init__()
 
@@ -22,7 +23,7 @@ class DinoDiscriminator2(BaseDiscriminator):
         self.freeze_backbone = freeze_backbone
         self.backbone = timm.create_model(
             backbone_name,
-            pretrained=True,
+            pretrained=pretrained,
             num_classes=0,
         )
         if freeze_backbone:
