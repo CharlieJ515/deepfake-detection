@@ -1,5 +1,6 @@
 import torch
 from torch.utils.tensorboard import SummaryWriter
+import matplotlib.pyplot as plt
 
 
 class BinaryClassificationMeter:
@@ -8,6 +9,8 @@ class BinaryClassificationMeter:
 
     def reset(self):
         self.tp = self.tn = self.fp = self.fn = 0
+        self._logits = []
+        self._labels = []
 
     @torch.no_grad()
     def update(self, preds: torch.Tensor, labels: torch.Tensor):
@@ -26,6 +29,9 @@ class BinaryClassificationMeter:
         labels: torch.Tensor,
         threshold: float = 0.5,
     ):
+        self._logits.append(logits.detach().view(-1).cpu())
+        self._labels.append(labels.detach().view(-1).cpu())
+
         preds = (logits.sigmoid() > threshold).long()
         self.update(preds, labels)
 
@@ -62,3 +68,66 @@ class BinaryClassificationMeter:
             },
             global_step=step,
         )
+
+    def plot_prob(self, save_path=None, title="Probability Distribution"):
+        if len(self._logits) == 0:
+            print("No logits stored.")
+            return
+
+        plt.figure(figsize=(8, 5))
+
+        logits = torch.cat(self._logits)
+        labels = torch.cat(self._labels)
+
+        probs = torch.sigmoid(logits)
+        pos_probs = probs[labels == 1]
+        neg_probs = probs[labels == 0]
+        plt.hist(neg_probs, color="blue", bins=40, alpha=0.6, label="Negative(0)")
+        plt.hist(pos_probs, color="orange", bins=40, alpha=0.6, label="Positive(1)")
+
+        neg_mid = neg_probs.mean().item()
+        pos_mid = pos_probs.mean().item()
+        plt.axvline(neg_mid, color="blue", linestyle="--", linewidth=2)
+        plt.axvline(pos_mid, color="orange", linestyle="--", linewidth=2)
+
+        plt.title(title)
+        plt.xlabel("Probability")
+        plt.ylabel("Count")
+        plt.legend()
+
+        if save_path is not None:
+            plt.savefig(save_path, dpi=300)
+            plt.close()
+        else:
+            plt.show()
+
+    def plot_logit(self, save_path=None, title="Logit Distribution"):
+        if len(self._logits) == 0:
+            print("No logits stored.")
+            return
+
+        plt.figure(figsize=(8, 5))
+
+        logits = torch.cat(self._logits)
+        labels = torch.cat(self._labels)
+
+        pos_logits = logits[labels == 1]
+        neg_logits = logits[labels == 0]
+        plt.hist(neg_logits, bins=40, alpha=0.6, label="Negative (label=0)")
+        plt.hist(pos_logits, bins=40, alpha=0.6, label="Positive (label=1)")
+
+        neg_mid = pos_logits.mean().item()
+        pos_mid = neg_logits.mean().item()
+        plt.axvline(neg_mid, color="blue", linestyle="--", linewidth=2)
+        plt.axvline(pos_mid, color="orange", linestyle="--", linewidth=2)
+
+        plt.title(title)
+        plt.xlabel("Logit")
+        plt.ylabel("Count")
+        plt.legend()
+
+        if save_path is not None:
+            plt.savefig(save_path, dpi=300)
+            plt.close()
+        else:
+            plt.show()
