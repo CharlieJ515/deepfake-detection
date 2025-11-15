@@ -22,3 +22,16 @@ dataset - https://drive.google.com/file/d/1badu11NqxGf6qM3PTTooQDJvQbejgbTv/view
 # GenImage
 
 dataset - https://drive.google.com/drive/folders/1jGt10bwTbhEZuGXLyvrCuxOI0cBqQ1FS 
+
+# SFHQ-T2I
+
+github - https://github.com/SelfishGene/SFHQ-T2I-dataset
+
+dataset - https://www.kaggle.com/datasets/selfishgene/sfhq-t2i-synthetic-faces-from-text-2-image-models
+
+# VGGFace2-HQ
+
+github - https://github.com/NNNNAI/VGGFace2-HQ
+
+dataset - https://drive.google.com/drive/folders/1ZHy7jrd6cGb2lUa4qYugXe41G_Ef9Ibw
+ 
