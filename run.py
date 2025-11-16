@@ -148,6 +148,7 @@ def evaluate(
     epoch: int,
     data_config: DataConfig,
     device: torch.device,
+    plot_path: Path = Path("./plots/train"),
 ):
     model = model.to(device)
     model.load(checkpoint, map_location=device)
@@ -202,8 +203,8 @@ def evaluate(
         f"f1_score={f1_score:.4f} f1_pos={f1_pos:.4f} f1_neg={f1_neg:.4f}"
     )
 
-    meter.plot_logit(save_path=f"plots/logit_{checkpoint.stem}.png")
-    meter.plot_prob(save_path=f"plots/prob_{checkpoint.stem}.png")
+    meter.plot_logit(save_path=plot_path / f"logit_{checkpoint.stem}.png")
+    meter.plot_prob(save_path=plot_path / f"prob_{checkpoint.stem}.png")
 
 
 if __name__ == "__main__":
