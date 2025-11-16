@@ -220,10 +220,17 @@ if __name__ == "__main__":
     # model = DinoDiscriminator2(freeze_backbone=True)
     # transform = v2.Compose(
     #     [
-    #         v2.Resize(img_size, v2.InterpolationMode.BICUBIC),
-    #         v2.CenterCrop(img_size),
+    #         v2.RandomResizedCrop(
+    #             size=img_size,
+    #             scale=(0.6, 1.0),
+    #             ratio=(1.0, 1.0),
+    #             interpolation=v2.InterpolationMode.BICUBIC,
+    #         ),
+    #         v2.RandomHorizontalFlip(p=0.5),
+    #         v2.GaussianBlur(kernel_size=3, sigma=(0.1, 0.3)),
     #         v2.ToImage(),
     #         v2.ToDtype(torch.float32, scale=True),
+    #         v2.GaussianNoise(mean=0.0, sigma=0.02),
     #         v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     #     ]
     # )
@@ -240,18 +247,18 @@ if __name__ == "__main__":
     #     seed=42,
     # )
     # train_config = TrainConfig(
-    #     num_epoch=100,
+    #     num_epoch=40,
     #     num_step=100,
     #     log_interval=10,
     #     threshold=0.5,
     #     device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
-    #     checkpoint_path=Path("./checkpoints/dino2/attempt1"),
+    #     checkpoint_path=Path("./checkpoints/dino2/augment1"),
     # )
     # eval_data_config = DataConfig(
     #     fake_shards=eval_fake_shards,
     #     real_shards=eval_real_shards,
     #     transform=transform,
-    #     num_workers=2,
+    #     num_workers=1,
     #     batch_size=128,
     #     seed=42,
     # )
@@ -284,7 +291,7 @@ if __name__ == "__main__":
         log_interval=10,
         threshold=0.5,
         device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
-        checkpoint_path=Path("./checkpoints/dino2/attempt1"),
+        checkpoint_path=Path("./checkpoints/dino2/augment1"),
     )
     eval_data_config = DataConfig(
         fake_shards=eval_fake_shards,
