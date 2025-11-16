@@ -34,4 +34,7 @@ dataset - https://www.kaggle.com/datasets/selfishgene/sfhq-t2i-synthetic-faces-f
 github - https://github.com/NNNNAI/VGGFace2-HQ
 
 dataset - https://drive.google.com/drive/folders/1ZHy7jrd6cGb2lUa4qYugXe41G_Ef9Ibw
- 
+
+# Celeb DF v2
+
+dataset - https://www.kaggle.com/datasets/reubensuju/celeb-df-v2?select=Celeb-real
