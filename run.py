@@ -10,7 +10,7 @@ from torchvision.transforms import v2
 from tqdm import tqdm
 from dotenv import load_dotenv
 
-from models import BaseDiscriminator, DinoDiscriminator3
+from models import BaseDiscriminator, DinoDiscriminator2
 from datasets import (
     PairedDataset,
     get_face3000_train,
@@ -207,86 +207,47 @@ def evaluate(
 
 
 if __name__ == "__main__":
-    # train dataset
-    train_fake_shards = get_sfhq_train("./data")
-    train_real_shards = get_ffhq_train("./data")
-
-    # eval dataset
-    eval_fake_shards = get_sfhq_eval("./data")
-    eval_real_shards = get_ffhq_eval("./data")
-
-    # model and transform
-    img_size = 518
-    model = DinoDiscriminator3(freeze_backbone=True)
-    transform = v2.Compose(
-        [
-            v2.RandomResizedCrop(
-                size=img_size,
-                scale=(0.6, 1.0),
-                ratio=(1.0, 1.0),
-                interpolation=v2.InterpolationMode.BICUBIC,
-            ),
-            v2.RandomHorizontalFlip(p=0.5),
-            v2.GaussianBlur(kernel_size=3, sigma=(0.1, 0.3)),
-            v2.ToImage(),
-            v2.ToDtype(torch.float32, scale=True),
-            v2.GaussianNoise(mean=0.0, sigma=0.02),
-            v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ]
-    )
-
-    # config
-    train_data_config = DataConfig(
-        fake_shards=train_fake_shards,
-        real_shards=train_real_shards,
-        transform=transform,
-        num_workers=3,
-        batch_size=128,
-        shard_shuffle_size=20,
-        data_shuffle_size=30_000,
-        seed=42,
-    )
-    train_config = TrainConfig(
-        num_epoch=30,
-        num_step=100,
-        log_interval=10,
-        threshold=0.5,
-        device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
-        checkpoint_path=Path("./checkpoints/dino3/augment1"),
-    )
-    eval_data_config = DataConfig(
-        fake_shards=eval_fake_shards,
-        real_shards=eval_real_shards,
-        transform=transform,
-        num_workers=1,
-        batch_size=128,
-        seed=42,
-    )
-
-    writer = SummaryWriter()
-    train(writer, model, train_config, train_data_config, eval_data_config)
-    writer.close()
+    # # train dataset
+    # train_fake_shards = get_sfhq_train("./data")
+    # train_real_shards = get_ffhq_train("./data")
 
     # # eval dataset
-    # eval_fake_shards = ["./data/eval/celeba_hq/shard-{000000..000001}.tar"]
-    # eval_real_shards = ["./data/eval/sfhq/shard-{000000..000001}.tar"]
+    # eval_fake_shards = get_sfhq_eval("./data")
+    # eval_real_shards = get_ffhq_eval("./data")
 
     # # model and transform
     # img_size = 518
     # model = DinoDiscriminator2(freeze_backbone=True)
     # transform = v2.Compose(
     #     [
-    #         v2.Resize(img_size, v2.InterpolationMode.BICUBIC),
-    #         v2.CenterCrop(img_size),
+    #         v2.RandomResizedCrop(
+    #             size=img_size,
+    #             scale=(0.6, 1.0),
+    #             ratio=(1.0, 1.0),
+    #             interpolation=v2.InterpolationMode.BICUBIC,
+    #         ),
+    #         v2.RandomHorizontalFlip(p=0.5),
+    #         v2.GaussianBlur(kernel_size=3, sigma=(0.1, 0.3)),
     #         v2.ToImage(),
     #         v2.ToDtype(torch.float32, scale=True),
+    #         v2.GaussianNoise(mean=0.0, sigma=0.02),
     #         v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     #     ]
     # )
 
     # # config
+    # train_data_config = DataConfig(
+    #     fake_shards=train_fake_shards,
+    #     real_shards=train_real_shards,
+    #     transform=transform,
+    #     num_workers=3,
+    #     batch_size=128,
+    #     shard_shuffle_size=20,
+    #     data_shuffle_size=30_000,
+    #     seed=42,
+    # )
     # train_config = TrainConfig(
-    #     num_epoch=100,
+    #     num_epoch=40,
     #     num_step=100,
     #     log_interval=10,
     #     threshold=0.5,
@@ -297,17 +258,56 @@ if __name__ == "__main__":
     #     fake_shards=eval_fake_shards,
     #     real_shards=eval_real_shards,
     #     transform=transform,
-    #     num_workers=2,
+    #     num_workers=1,
     #     batch_size=128,
     #     seed=42,
     # )
 
     # writer = SummaryWriter()
-    # for checkpoint in train_config.checkpoint_path.iterdir():
-    #     if checkpoint.suffix != ".pt":
-    #         continue
-
-    #     print(f"Checkpoint - {checkpoint.name}")
-    #     evaluate(writer, model, checkpoint, 0, eval_data_config, train_config.device)
-
+    # train(writer, model, train_config, train_data_config, eval_data_config)
     # writer.close()
+
+    # eval dataset
+    eval_real_shards = ["./data/eval/celeba_hq/shard-{000000..000001}.tar"]
+    eval_fake_shards = ["./data/eval/sfhq/shard-{000000..000001}.tar"]
+
+    # model and transform
+    img_size = 518
+    model = DinoDiscriminator2(freeze_backbone=True)
+    transform = v2.Compose(
+        [
+            v2.Resize(img_size, v2.InterpolationMode.BICUBIC),
+            v2.CenterCrop(img_size),
+            v2.ToImage(),
+            v2.ToDtype(torch.float32, scale=True),
+            v2.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ]
+    )
+
+    # config
+    train_config = TrainConfig(
+        num_epoch=100,
+        num_step=100,
+        log_interval=10,
+        threshold=0.5,
+        device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
+        checkpoint_path=Path("./checkpoints/dino2/augment1"),
+    )
+    eval_data_config = DataConfig(
+        fake_shards=eval_fake_shards,
+        real_shards=eval_real_shards,
+        transform=transform,
+        num_workers=2,
+        batch_size=128,
+        seed=42,
+    )
+
+    writer = SummaryWriter()
+    for checkpoint in train_config.checkpoint_path.iterdir():
+        if checkpoint.suffix != ".pt":
+            continue
+
+        print(f"Checkpoint - {checkpoint.name}")
+        evaluate(writer, model, checkpoint, 0, eval_data_config, train_config.device)
+
+    writer.close()
