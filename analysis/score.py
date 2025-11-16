@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import torch
 from torch.utils.tensorboard import SummaryWriter
 import matplotlib.pyplot as plt
@@ -69,7 +71,11 @@ class BinaryClassificationMeter:
             global_step=step,
         )
 
-    def plot_prob(self, save_path=None, title="Probability Distribution"):
+    def plot_prob(
+        self,
+        save_path: Path | None = None,
+        title="Probability Distribution",
+    ):
         if len(self._logits) == 0:
             print("No logits stored.")
             return
@@ -101,7 +107,11 @@ class BinaryClassificationMeter:
         else:
             plt.show()
 
-    def plot_logit(self, save_path=None, title="Logit Distribution"):
+    def plot_logit(
+        self,
+        save_path: Path | None = None,
+        title: str = "Logit Distribution",
+    ):
         if len(self._logits) == 0:
             print("No logits stored.")
             return
@@ -113,11 +123,11 @@ class BinaryClassificationMeter:
 
         pos_logits = logits[labels == 1]
         neg_logits = logits[labels == 0]
-        plt.hist(neg_logits, bins=40, alpha=0.6, label="Negative (label=0)")
-        plt.hist(pos_logits, bins=40, alpha=0.6, label="Positive (label=1)")
+        plt.hist(neg_logits, color="blue", bins=40, alpha=0.6, label="Negative(0)")
+        plt.hist(pos_logits, color="orange", bins=40, alpha=0.6, label="Positive(1)")
 
-        neg_mid = pos_logits.mean().item()
-        pos_mid = neg_logits.mean().item()
+        neg_mid = neg_logits.mean().item()
+        pos_mid = pos_logits.mean().item()
         plt.axvline(neg_mid, color="blue", linestyle="--", linewidth=2)
         plt.axvline(pos_mid, color="orange", linestyle="--", linewidth=2)
 
