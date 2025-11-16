@@ -102,6 +102,7 @@ class BinaryClassificationMeter:
         plt.legend()
 
         if save_path is not None:
+            save_path.parent.mkdir(parents=True, exist_ok=True)
             plt.savefig(save_path, dpi=300)
             plt.close()
         else:
@@ -137,6 +138,7 @@ class BinaryClassificationMeter:
         plt.legend()
 
         if save_path is not None:
+            save_path.parent.mkdir(parents=True, exist_ok=True)
             plt.savefig(save_path, dpi=300)
             plt.close()
         else:
