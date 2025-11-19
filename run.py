@@ -19,6 +19,8 @@ from datasets import (
     get_ffhq_eval,
     get_sfhq_train,
     get_sfhq_eval,
+    get_generated_train,
+    get_generated_eval,
 )
 from datasets.utils import expand_brace_patterns
 from analysis.score import BinaryClassificationMeter
@@ -209,11 +211,11 @@ def evaluate(
 
 if __name__ == "__main__":
     # # train dataset
-    # train_fake_shards = get_sfhq_train("./data")
+    # train_fake_shards = get_generated_train("./data/generated")
     # train_real_shards = get_ffhq_train("./data")
 
     # # eval dataset
-    # eval_fake_shards = get_sfhq_eval("./data")
+    # eval_fake_shards = get_generated_eval("./data/generated")
     # eval_real_shards = get_ffhq_eval("./data")
 
     # # model and transform
@@ -241,14 +243,14 @@ if __name__ == "__main__":
     #     fake_shards=train_fake_shards,
     #     real_shards=train_real_shards,
     #     transform=transform,
-    #     num_workers=3,
+    #     num_workers=2,
     #     batch_size=128,
     #     shard_shuffle_size=20,
     #     data_shuffle_size=30_000,
     #     seed=42,
     # )
     # train_config = TrainConfig(
-    #     num_epoch=40,
+    #     num_epoch=20,
     #     num_step=100,
     #     log_interval=10,
     #     threshold=0.5,
